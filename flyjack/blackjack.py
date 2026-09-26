@@ -168,7 +168,9 @@ def action_values(policy=None):
     """Q(obs, a) for every observation.
 
     With ``policy=None`` returns optimal action values; otherwise the values of
-    following the deterministic ``policy`` after the first action.
+    following ``policy`` after the first action. ``policy(obs)`` returns an
+    action or, for a stochastic policy, the probability of hitting (a
+    deterministic action is the special case 0/1, since ``STAND=0, HIT=1``).
     """
     q = {}
     # Successor states are always evaluated first:
@@ -188,8 +190,12 @@ def action_values(policy=None):
         if policy is None:
             v[obs] = max(st, hit)
         else:
-            v[obs] = q[obs][policy(obs)]
+            v[obs] = _mix(q[obs], policy(obs))
     return q
+
+
+def _mix(q, p_hit):
+    return p_hit * q[HIT] + (1 - p_hit) * q[STAND]
 
 
 def optimal_policy_table():
@@ -198,7 +204,7 @@ def optimal_policy_table():
 
 
 def expected_return(policy):
-    """Exact expected reward per hand of a deterministic policy."""
+    """Exact expected reward per hand of a (possibly stochastic) policy."""
     q = action_values(policy)
     ev = 0.0
     for c1, p1 in CARD_PROBS.items():
@@ -213,5 +219,5 @@ def expected_return(policy):
                         continue
                     total, usable = hand_value(player)
                     obs = (total, up, usable)
-                    ev += p * q[obs][policy(obs)]
+                    ev += p * _mix(q[obs], policy(obs))
     return ev

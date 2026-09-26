@@ -56,3 +56,16 @@ def test_simulation_matches_exact_value():
     rewards = [play_hand(env, basic_strategy) for _ in range(200_000)]
     mean, sem = statistics.fmean(rewards), statistics.stdev(rewards) / len(rewards) ** 0.5
     assert abs(mean - expected_return(basic_strategy)) < 4 * sem
+
+
+def test_stochastic_policy_exact_value_matches_simulation():
+    import random
+    p_hit = lambda o: 0.7 if o[0] < 15 else (0.2 if o[0] < 18 else 0.0)
+    exact = expected_return(p_hit)
+    rng, env = random.Random(1), Blackjack(seed=2)
+    rewards = [play_hand(env, lambda o: HIT if rng.random() < p_hit(o) else STAND)
+               for _ in range(200_000)]
+    se = statistics.pstdev(rewards) / len(rewards) ** 0.5
+    assert abs(statistics.fmean(rewards) - exact) < 4 * se
+    # deterministic policies given as probabilities are unchanged
+    assert abs(expected_return(lambda o: float(dealer_rule(o))) - expected_return(dealer_rule)) < 1e-12
