@@ -1,4 +1,5 @@
-# CPU build of PyTorch is enough (pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu)
+# CPU PyTorch is enough (pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu);
+# a CUDA build (e.g. --index-url https://download.pytorch.org/whl/cu128) makes recording ~10x faster
 torch>=2.4
 numpy
 pandas

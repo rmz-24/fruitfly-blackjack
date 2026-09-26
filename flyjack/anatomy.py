@@ -81,10 +81,10 @@ def load_anatomy():
     pn = ann[pn_mask].sort_values("index")
     mbon = ann[ann.cell_class == "MBON"].sort_values("index")
     return Anatomy(
-        pn=pn["index"].to_numpy(),
+        pn=pn["index"].to_numpy(copy=True),
         pn_glomerulus=pn["cell_type"].to_numpy(dtype=str),
         kc=_indices(ann.cell_class == "Kenyon_Cell"),
-        mbon=mbon["index"].to_numpy(),
+        mbon=mbon["index"].to_numpy(copy=True),
         mbon_type=mbon["cell_type"].to_numpy(dtype=str),
         dan=_indices(ann.cell_class == "DAN"),
         apl=_indices(ann.cell_type == "APL"),

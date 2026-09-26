@@ -4,7 +4,7 @@ Teaching the **whole-brain connectome of the adult fruit fly** (*Drosophila mela
 to play **Blackjack**.
 
 The brain model is the leaky integrate-and-fire (LIF) emulation of the full
-[FlyWire](https://flywire.ai/) v783 connectome (~139k neurons, ~5M synaptic connections)
+[FlyWire](https://flywire.ai/) v783 connectome (~139k neurons, ~15M connections between neuron pairs)
 from [eonsystemspbc/fly-brain](https://github.com/eonsystemspbc/fly-brain), itself based on
 Shiu et al., *Nature* 2024.
 

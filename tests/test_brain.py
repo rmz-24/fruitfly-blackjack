@@ -56,5 +56,18 @@ def test_sugar_neurons_drive_feeding_motor_neurons():
     rates[0, [idx[r] for r in sugar]] = 200.0
     counts = brain.run(rates, 300.0)[0]
     ann = annotations()
-    motor = ann.loc[ann.super_class == "motor", "index"].to_numpy()
+    motor = ann.loc[ann.super_class == "motor", "index"].to_numpy(copy=True)
     assert counts[motor].max() >= 10
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="no CUDA device")
+def test_cuda_matches_cpu_behaviour():
+    pre, post = np.array([0, 0]), np.array([1, 2])
+    w = np.array([100.0, -100.0], np.float32)
+    rates = torch.zeros(2, 4)
+    rates[:, 0] = 500.0
+    counts, raster = FlyBrain(pre, post, w, n=4, device="cuda").run(rates, 100.0, record_raster=[0, 1])
+    assert counts.device.type == "cpu"
+    assert (counts[:, 0] > 20).all() and (counts[:, 1] > 0).all()
+    assert (counts[:, 2:] == 0).all()
+    assert len(raster) == int(counts[:, :2].sum())

@@ -11,7 +11,7 @@ refractory handling. Two changes make it fast on a CPU:
 * **Ring-buffer delays** instead of ``torch.roll`` over the delay buffer.
 
 Several independent trials (e.g. different Blackjack observations) are
-simulated in parallel along a batch dimension.
+simulated in parallel along a batch dimension, on the CPU or a CUDA GPU.
 """
 
 from pathlib import Path
@@ -46,7 +46,7 @@ def load_connectome():
             df[cols[2]].to_numpy(np.float32), len(neuron_ids()))
 
 
-def task_brain(extra=None):
+def task_brain(extra=None, device="cpu"):
     """The full connectome with the olfactory projection neurons clamped.
 
     PNs are the sensory interface of the Blackjack task: their firing is set
@@ -65,7 +65,7 @@ def task_brain(extra=None):
     is_pn = np.zeros(n, bool)
     is_pn[ann.loc[ann.cell_class == "ALPN", "index"].to_numpy()] = True
     keep = ~is_pn[post]
-    return FlyBrain(pre[keep], post[keep], weight[keep], n, extra=extra)
+    return FlyBrain(pre[keep], post[keep], weight[keep], n, extra=extra, device=device)
 
 
 class FlyBrain:
@@ -77,10 +77,11 @@ class FlyBrain:
         Defaults to the full FlyWire v783 connectome.
     extra : optional ``(pre, post, weight)`` arrays appended to the connectome
         (used to install learned synapses).
+    device : torch device for all state (``"cpu"`` or ``"cuda"``).
     """
 
     def __init__(self, pre=None, post=None, weight=None, n=None, extra=None,
-                 params=MODEL_PARAMS, dt=DT):
+                 params=MODEL_PARAMS, dt=DT, device="cpu"):
         if pre is None:
             pre, post, weight, n = load_connectome()
         if extra is not None:
@@ -89,14 +90,16 @@ class FlyBrain:
             weight = np.concatenate([weight, np.asarray(extra[2], np.float32)])
         self.n = int(n)
         self.params, self.dt = params, dt
+        self.device = torch.device(device)
 
         # CSR by presynaptic neuron: outgoing synapses of j are ptr[j]:ptr[j+1].
         order = np.argsort(pre, kind="stable")
-        self.post = torch.from_numpy(np.ascontiguousarray(post[order]))
-        self.w = torch.from_numpy(np.ascontiguousarray(weight[order] * params["wScale"]))
+        self.post = torch.from_numpy(np.ascontiguousarray(post[order])).to(self.device)
+        self.w = torch.from_numpy(
+            np.ascontiguousarray(weight[order] * params["wScale"], np.float32)).to(self.device)
         ptr = np.zeros(self.n + 1, np.int64)
         np.cumsum(np.bincount(pre, minlength=self.n), out=ptr[1:])
-        self.ptr = torch.from_numpy(ptr)
+        self.ptr = torch.from_numpy(ptr).to(self.device)
 
         self.delay_steps = int(params["tDelay"] / dt) + 1   # = upstream buffer length
         self.refrac_steps = int(round(params["tRefrac"] / dt))
@@ -119,7 +122,7 @@ class FlyBrain:
         if total == 0:
             return None
         offset = torch.repeat_interleave(torch.cumsum(count, 0) - count, count)
-        syn = torch.repeat_interleave(start, count) + torch.arange(total) - offset
+        syn = torch.repeat_interleave(start, count) + torch.arange(total, device=self.device) - offset
         target = torch.repeat_interleave(b, count) * self.n + self.post[syn]
         return target, self.w[syn]
 
@@ -136,7 +139,7 @@ class FlyBrain:
 
         Returns
         -------
-        counts : int32 tensor [B, N] spike counts over the whole run.
+        counts : int32 CPU tensor [B, N] spike counts over the whole run.
         raster : ``[n_spikes, 3]`` array of ``(trial, neuron, time_ms)``, if requested.
 
         Update order per 0.1 ms step (identical to upstream ``TorchModel``):
@@ -146,34 +149,35 @@ class FlyBrain:
         Only the dense membrane/conductance decay touches every neuron; the
         delay buffer, refractory gating and resets are handled sparsely.
         """
-        rates = torch.as_tensor(rates, dtype=torch.float32)
+        dev = self.device
+        rates = torch.as_tensor(rates, dtype=torch.float32).to(dev)
         if rates.dim() == 1:
             rates = rates.unsqueeze(0)
         B, N = rates.shape
         assert N == self.n
         p = self.params
-        gen = torch.Generator().manual_seed(seed)
+        gen = torch.Generator(device=dev).manual_seed(seed)
 
         flat_rates = rates.reshape(-1)
         stim_idx = flat_rates.nonzero(as_tuple=True)[0]
         stim_prob = flat_rates[stim_idx] * self.dt / 1000.0
 
         # Refractory length per neuron; upstream sets it to 0 for stimulated neurons.
-        refrac_len = torch.full((B * N,), self.refrac_steps, dtype=torch.int64)
+        refrac_len = torch.full((B * N,), self.refrac_steps, dtype=torch.int64, device=dev)
         refrac_len[stim_idx] = 0
-        last_spike = torch.full((B * N,), -(10 ** 9), dtype=torch.int64)
+        last_spike = torch.full((B * N,), -(10 ** 9), dtype=torch.int64, device=dev)
 
-        v = torch.full((B * N,), p["v0"])
-        g = torch.zeros(B * N)
-        counts = torch.zeros(B * N, dtype=torch.int32)
+        v = torch.full((B * N,), p["v0"], device=dev)
+        g = torch.zeros(B * N, device=dev)
+        counts = torch.zeros(B * N, dtype=torch.int32, device=dev)
         ring = [None] * self.delay_steps     # synaptic events in flight
-        spk = torch.zeros(0, dtype=torch.int64)
+        spk = torch.zeros(0, dtype=torch.int64, device=dev)
         leak, bias = 1 - self.mem_factor, self.mem_factor * p["vRest"]
 
         rec_mask, raster = None, []
         if record_raster is not None:
-            rec_mask = torch.zeros(N, dtype=torch.bool)
-            rec_mask[torch.as_tensor(np.asarray(record_raster), dtype=torch.long)] = True
+            rec_mask = torch.zeros(N, dtype=torch.bool, device=dev)
+            rec_mask[torch.as_tensor(np.array(record_raster), dtype=torch.long, device=dev)] = True
 
         n_steps = int(round(duration_ms / self.dt))
         for t in range(n_steps):
@@ -204,10 +208,11 @@ class FlyBrain:
                 if rec_mask is not None:
                     keep = spk[rec_mask[spk % N]]
                     if keep.numel():
+                        keep = keep.cpu()
                         raster.append(np.stack([(keep // N).numpy(), (keep % N).numpy(),
                                                 np.full(keep.numel(), (t + 1) * self.dt)], 1))
 
-        counts = counts.view(B, N)
+        counts = counts.view(B, N).cpu()
         if rec_mask is not None:
             return counts, (np.concatenate(raster) if raster else np.zeros((0, 3)))
         return counts
