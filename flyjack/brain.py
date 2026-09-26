@@ -46,7 +46,7 @@ def load_connectome():
             df[cols[2]].to_numpy(np.float32), len(neuron_ids()))
 
 
-def task_brain(extra=None, device="cpu"):
+def task_brain(extra=None, device="cpu", drop=None):
     """The full connectome with the olfactory projection neurons clamped.
 
     PNs are the sensory interface of the Blackjack task: their firing is set
@@ -57,7 +57,10 @@ def task_brain(extra=None, device="cpu"):
     few glomeruli ignites the whole antennal lobe within ~20 ms (lateral
     excitation recruits every PN), which then activates ~60% of all Kenyon
     cells regardless of the odor. With PNs clamped, KC responses become sparse
-    (~10%) and odor-specific, as observed in real flies.
+    (~7%) and odor-specific, as observed in real flies.
+
+    ``drop(pre, post) -> bool mask`` removes further edges (e.g. the native
+    KC->MBON synapses replaced by learned ones); ``extra`` appends edges.
     """
     from .anatomy import annotations
     pre, post, weight, n = load_connectome()
@@ -65,6 +68,8 @@ def task_brain(extra=None, device="cpu"):
     is_pn = np.zeros(n, bool)
     is_pn[ann.loc[ann.cell_class == "ALPN", "index"].to_numpy()] = True
     keep = ~is_pn[post]
+    if drop is not None:
+        keep &= ~drop(pre, post)
     return FlyBrain(pre[keep], post[keep], weight[keep], n, extra=extra, device=device)
 
 
