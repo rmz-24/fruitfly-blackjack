@@ -46,6 +46,28 @@ def load_connectome():
             df[cols[2]].to_numpy(np.float32), len(neuron_ids()))
 
 
+def task_brain(extra=None):
+    """The full connectome with the olfactory projection neurons clamped.
+
+    PNs are the sensory interface of the Blackjack task: their firing is set
+    entirely by the card "odor" (like an optogenetic PN-clamp experiment), so
+    all synapses *onto* antennal-lobe projection neurons are removed.
+
+    Why: in this point-neuron model without graded local inhibition, driving a
+    few glomeruli ignites the whole antennal lobe within ~20 ms (lateral
+    excitation recruits every PN), which then activates ~60% of all Kenyon
+    cells regardless of the odor. With PNs clamped, KC responses become sparse
+    (~10%) and odor-specific, as observed in real flies.
+    """
+    from .anatomy import annotations
+    pre, post, weight, n = load_connectome()
+    ann = annotations()
+    is_pn = np.zeros(n, bool)
+    is_pn[ann.loc[ann.cell_class == "ALPN", "index"].to_numpy()] = True
+    keep = ~is_pn[post]
+    return FlyBrain(pre[keep], post[keep], weight[keep], n, extra=extra)
+
+
 class FlyBrain:
     """Event-driven, batched LIF simulation over a connectome.
 
