@@ -35,11 +35,15 @@ from .record import load_responses
 
 
 class KenyonCode:
-    """L2-normalised KC spike-count vectors per observation and trial."""
+    """L2-normalised KC spike-count vectors per observation and trial.
 
-    def __init__(self, path=None, n_train_trials=None):
+    ``population`` selects another recorded population as the input code
+    (e.g. ``"pn"`` for the control that bypasses the mushroom-body expansion).
+    """
+
+    def __init__(self, path=None, n_train_trials=None, population="kc"):
         obs, d = load_responses(path) if path else load_responses()
-        kc = d["kc"].astype(np.float32)                         # [obs, trial, kc]
+        kc = d[population].astype(np.float32)                   # [obs, trial, neuron]
         norm = np.linalg.norm(kc, axis=2, keepdims=True)
         self.x = kc / np.maximum(norm, 1e-6)
         self.observations = obs
