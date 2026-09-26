@@ -20,7 +20,7 @@ back into the connectome, and the spiking brain plays hands on its own.
 | dealer rule (hit below 17) | −0.079 | 87.1% |
 | fly, control: readout of projection neurons (no mushroom body) | −0.061 | 91.4% |
 | **fly: mushroom body** (5 seeds, held-out neural trials) | **−0.0485 ± 0.0001** | **97.5%** |
-| **fly: pure spiking brain with the learned synapses** | **−0.051** | **95.4%** (per trial) |
+| **fly: pure spiking brain with the learned synapses** | **−0.056** | **95.1%** (per trial) |
 | basic strategy (optimal) | −0.0468 | 100% |
 
 Values are exact expectations over the infinite deck, computed by dynamic programming over
@@ -102,14 +102,15 @@ Hands are then played **only with the spiking simulation**. The card odor drives
 
 | closed-loop metric | value |
 |---|---:|
-| spiking decision = mushroom-body readout (same trial) | 96.1% (8 trials × 280 states) |
-| spiking decision = basic strategy | 95.4% per trial, 96.8% majority vote |
-| exact expected reward of the spiking policy | −0.0512 |
+| spiking decision = mushroom-body readout (same trial) | 95.5% (8 trials × 280 states) |
+| spiking decision = basic strategy | 95.1% per trial, 97.9% majority vote |
+| exact expected reward of the spiking policy | −0.0557 |
 | 4,000 hands played live in the spiking brain | −0.043 ± 0.030 (95% CI) |
 
-The spiking brain loses about 0.003 per hand relative to the readout. Most of the gap is
-decisions near the readout's boundary, where the spike-count comparison is noisy (2.5% of
-trials are exact ties, resolved as STAND).
+The spiking brain loses about 0.007 per hand relative to the readout. Most of the gap is
+decisions near the readout's boundary, where the spike-count comparison is noisy (2.7% of
+trials are exact ties, resolved as STAND). GPU runs are not bit-reproducible (CUDA atomic
+adds), so repeated closed-loop runs differ slightly (another run: 96.1% agreement, −0.051).
 
 ![raster](figures/brain_plays_a_hand.png)
 
