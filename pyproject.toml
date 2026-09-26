@@ -1,0 +1,13 @@
+[project]
+name = "flyjack"
+version = "0.1.0"
+description = "Teaching the FlyWire fruit-fly connectome to play Blackjack"
+requires-python = ">=3.10"
+license = { text = "GPL-2.0-only" }
+
+[tool.setuptools]
+packages = ["flyjack"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
