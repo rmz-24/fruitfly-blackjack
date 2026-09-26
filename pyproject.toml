@@ -6,7 +6,10 @@ requires-python = ">=3.10"
 license = { text = "GPL-2.0-only" }
 
 [tool.setuptools]
-packages = ["flyjack"]
+packages = ["flyjack", "flyjack.web"]
+
+[tool.setuptools.package-data]
+"flyjack.web" = ["static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -33,9 +33,10 @@ def evaluate(mb, code):
 
 
 def train(code, hands=300_000, eta=0.05, eta_final=0.002, epsilon=0.3, epsilon_final=0.02,
-          seed=0, eval_every=5_000, log=print):
+          seed=0, eval_every=5_000, log=print, callback=None):
     """Play ``hands`` hands, learning online. Learning rate and exploration
-    decay geometrically from their initial to their final values."""
+    decay geometrically from their initial to their final values.
+    ``callback(entry, mb)`` is called after every evaluation; returning True stops."""
     rng = np.random.default_rng(seed)
     env = Blackjack(seed=seed)
     mb = MushroomBody(code.n_kc, eta=eta)
@@ -45,6 +46,8 @@ def train(code, hands=300_000, eta=0.05, eta_final=0.002, epsilon=0.3, epsilon_f
         if h % eval_every == 0:
             ev = evaluate(mb, code)
             history.append({"hands": h, **ev})
+            if callback is not None and callback(history[-1], mb):
+                break
             if h % (eval_every * 10) == 0:
                 log(f"  seed {seed} hand {h:7d}: EV {ev['expected_return']:+.4f}  "
                     f"agreement {ev['agreement']:.3f}  ({time.time() - t0:.0f}s)")

@@ -28,6 +28,29 @@ the fly's (noisy) choice probabilities. Monte Carlo cross-checks agree (tables b
 
 ![learning curves](figures/learning_curves.png)
 
+## Fly Lab: test the fly in your browser
+
+```bash
+python -m flyjack.web          # opens http://127.0.0.1:8000
+```
+
+A local web interface for playing with the fly and watching its brain:
+
+- **Play:** deal random or hand-picked cards and let the fly decide. Each decision shows the
+  card odor on the projection neurons, which Kenyon cells fired and which way each one votes,
+  the HIT/STAND output pools, and whether basic strategy agrees. In **Spiking brain** mode
+  (CUDA GPU; the brain loads once in ~20 s, then each decision takes a few seconds) every
+  decision is a live 200 ms whole-brain simulation, replayed as an animated spike raster with
+  the "race" between the HIT and STAND neurons.
+- **Strategy:** the fly's choice probabilities in all 280 states next to basic strategy
+  (readout or closed-loop spiking brain). Hover for predicted vs. true values, click to probe.
+- **Probe a state:** present one situation many times and see how reliable the choice is.
+- **Tournament:** the fly against the reference strategies on up to 200k hands.
+- **Learning:** training curves, plus **train a new fly** from scratch and watch it learn live.
+  It can then play in every tab. Saved results are never overwritten.
+
+![Fly Lab](figures/fly_lab.png)
+
 ## How it works
 
 ### 1. Cards as odors
@@ -145,7 +168,8 @@ python -m flyjack.evaluate                           # table + PN control
 python -m flyjack.closed_loop                        # spiking play, ~15 min on GPU
 python -m flyjack.plots                              # figures/
 
-python play.py                   # watch the fly play (readout on recorded trials)
+python -m flyjack.web            # Fly Lab web interface
+python play.py                   # watch the fly play in the terminal (readout on recorded trials)
 python play.py --spiking         # ... or decided live by the spiking brain
 ```
 
@@ -168,6 +192,7 @@ hand 1: fly 10 5  |  dealer shows 10
 | `flyjack/mushroom_body.py`, `flyjack/train.py` | KC→MBON readout and dopamine TD learning |
 | `flyjack/evaluate.py`, `flyjack/plots.py` | evaluation and figures |
 | `flyjack/closed_loop.py`, `play.py` | learned synapses in the connectome; spiking play |
+| `flyjack/web/` | Fly Lab: local web interface (stdlib HTTP server + vanilla JS) |
 
 ## Credits
 - Connectome: FlyWire, Dorkenwald et al. and Schlegel et al., *Nature* 2024 (v783).
