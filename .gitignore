@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+*.egg-info/
+
+# Large data (fetched by scripts/download_data.py)
+data/raw/
+data/cache/*.pt
+data/cache/*.pkl
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
