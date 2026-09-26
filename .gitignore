@@ -18,3 +18,5 @@ data/cache/*.pkl
 
 # Private handoff notes
 HANDOFF_CLAUDE.md
+CLAUDE_HANDOFF.zip
+claude_home/
