@@ -28,13 +28,26 @@ the fly's (noisy) choice probabilities. Monte Carlo cross-checks agree (tables b
 
 ![learning curves](figures/learning_curves.png)
 
-## Fly Lab: test the fly in your browser
+## Fly Lab: watch the fly play
 
 ```bash
 python -m flyjack.web          # opens http://127.0.0.1:8000
 ```
 
-A local web interface for playing with the fly and watching its brain:
+A simple spectator view puts the fly and the blackjack table first. Click **Watch the
+fly play** for continuous play, or **One hand** to watch a single game. Cards appear in
+sequence, the fly announces its hit or stand choice, and the dealer reveals its hand.
+Pause and resume at any point, change the pace, or choose **Finish hand** to stop after
+the current game. Playback also pauses when you leave the browser tab.
+
+The default uses learned responses to recorded brain activity. **Playback settings**
+also offers live spiking-brain decisions on a CUDA GPU. The animated fly and progress
+steps illustrate the decision sequence; they are not a neural-activity measurement.
+
+![Watch the fruit fly play blackjack](figures/fly_watch.png)
+
+The **Explore the lab** link opens the original research interface at `/lab.html`,
+with its detailed neural visualizations and experiments:
 
 - **Play:** deal random or hand-picked cards and let the fly decide. Each decision shows the
   card odor on the projection neurons, which Kenyon cells fired and which way each one votes,

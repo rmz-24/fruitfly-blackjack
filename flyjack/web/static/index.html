@@ -1,248 +1,83 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fly Lab</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪰</text></svg>">
-<link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Watch a simulated fruit-fly brain play blackjack, one tiny decision at a time.">
+  <title>Fly Lab — A tiny brain at the blackjack table</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🪰%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="top">
-  <div class="brand">
-    <span class="logo" aria-hidden="true">🪰</span>
-    <div>
-      <h1>Fly Lab</h1>
-      <p class="sub" id="brain-stats">a fruit-fly connectome that learned Blackjack</p>
-    </div>
-  </div>
-  <div class="controls">
-    <div class="field">
-      <span class="label">The fly decides with</span>
-      <div class="seg" id="mode-seg" role="radiogroup">
-        <button data-mode="readout" class="on" title="Mushroom-body readout of recorded Kenyon-cell responses (instant)">Readout</button>
-        <button data-mode="spiking" title="Run the whole-brain spiking simulation live on the GPU (a few seconds per decision)">Spiking brain</button>
-      </div>
-    </div>
-    <div class="field" id="model-field" hidden>
-      <span class="label">Fly</span>
-      <div class="seg" id="model-seg">
-        <button data-model="trained" class="on">trained</button>
-        <button data-model="new">your new fly</button>
-      </div>
-    </div>
-    <span class="pill" id="spiking-pill" hidden></span>
-  </div>
-</header>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Fly Lab home"><span class="brand-mark" aria-hidden="true">✳</span> fly lab<span class="brand-dot">.</span></a>
+    <nav aria-label="Main navigation"><a href="#how-it-works">How it works</a><a class="lab-link" href="lab.html">Explore the lab <span aria-hidden="true">↗</span></a></nav>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div><p class="eyebrow">A SMALL EXPERIMENT IN INTELLIGENCE</p><h1 id="page-title">Tiny brain. <em>Big decisions.</em></h1></div>
+      <p>A fruit fly’s brain learned to play blackjack.<br> Pull up a chair and see what it does next.</p>
+    </section>
 
-<nav class="tabs" role="tablist">
-  <button data-tab="play" class="on">Play</button>
-  <button data-tab="strategy">Strategy</button>
-  <button data-tab="probe">Probe a state</button>
-  <button data-tab="tournament">Tournament</button>
-  <button data-tab="learning">Learning</button>
-  <button data-tab="about">How it works</button>
-</nav>
-
-<main>
-<!-- ============================== PLAY ============================== -->
-<section id="tab-play" class="tab on">
-  <div class="play-grid">
-    <div class="col">
-      <div class="card table-card">
-        <div class="felt">
-          <div class="hand-row">
-            <span class="who">Dealer</span>
-            <div class="cards" id="dealer-cards"></div>
-            <span class="total" id="dealer-total"></span>
+    <section class="playground" aria-label="Watch the fly play blackjack">
+      <div class="table-column">
+        <div class="table" id="table">
+          <div class="table-topline"><span><i class="status-dot"></i> THE BLACKJACK TABLE</span><span id="hand-number">TAKE A SEAT</span></div>
+          <div class="hand dealer-hand">
+            <div class="hand-label"><span>Dealer</span><span class="total" id="dealer-total">—</span></div>
+            <div class="cards" id="dealer-cards" aria-label="Dealer cards"><div class="card-placeholder"></div><div class="card-placeholder"></div></div>
           </div>
-          <div class="banner" id="banner">Deal a hand to start</div>
-          <div class="hand-row">
-            <span class="who">Fly</span>
-            <div class="cards" id="player-cards"></div>
-            <span class="total" id="player-total"></span>
+          <div class="table-center"><span class="table-line"></span><p id="table-message">A little brain at a big table.</p><span class="table-line"></span></div>
+          <div class="hand fly-hand">
+            <div class="cards" id="player-cards" aria-label="Fruit fly cards"><div class="card-placeholder"></div><div class="card-placeholder"></div></div>
+            <div class="hand-label"><span><span aria-hidden="true">✳</span> The fly</span><span class="total" id="player-total">—</span></div>
           </div>
+          <p class="table-rules">Closest to 21 wins. Go over, and it’s a bust.</p>
         </div>
-        <div class="actions">
-          <button class="primary" id="btn-deal">Deal</button>
-          <button id="btn-decide" disabled>Let the fly decide</button>
-          <button id="btn-auto" disabled title="Deal if needed, then let the fly play the hand to the end">Autoplay</button>
-          <span class="spacer"></span>
-          <span class="muted small" title="Play the move yourself instead of the fly">you:</span>
-          <button class="ghost hit small" id="btn-hit" disabled>Hit</button>
-          <button class="ghost stand small" id="btn-stand" disabled>Stand</button>
-        </div>
-        <details class="custom">
-          <summary>Custom deal</summary>
-          <div class="custom-row">
-            <label>Fly's cards <select id="c-p1"></select><select id="c-p2"></select></label>
-            <label>Dealer <select id="c-d1"></select><select id="c-d2"></select></label>
-            <button id="btn-custom">Deal these</button>
-          </div>
-          <p class="muted small">“?” = random card. The dealer's second card stays hidden until the hand ends.</p>
-        </details>
-      </div>
-
-      <div class="card">
-        <div class="card-head"><h2>Session</h2><button class="ghost small" id="btn-reset-session">reset</button></div>
-        <div class="tiles" id="session-tiles"></div>
-        <ol class="log" id="hand-log"></ol>
-      </div>
-    </div>
-
-    <div class="col">
-      <div class="card brain-card">
-        <div class="card-head">
-          <h2>Inside the fly's brain</h2>
-          <span class="muted small" id="brain-caption">no decision yet</span>
-        </div>
-        <div id="brain-empty" class="empty">Ask the fly to decide and its neural activity appears here, from card odor to choice.</div>
-        <div id="brain" hidden>
-          <div class="stage">
-            <div class="stage-title"><span class="num">1</span> Card odor → projection neurons <span class="muted small" id="odor-caption"></span></div>
-            <div id="pn-grid" class="pn-grid"></div>
-          </div>
-          <div class="stage">
-            <div class="stage-title"><span class="num">2</span> Kenyon cells (mushroom body)
-              <span class="muted small" id="kc-caption"></span>
-              <label class="toggle small"><input type="checkbox" id="kc-vote" checked> color by vote</label>
-            </div>
-            <div class="kc-wrap"><canvas id="kc-canvas" class="kc-canvas"></canvas></div>
-            <div class="legend small" id="kc-legend"></div>
-          </div>
-          <div class="stage">
-            <div class="stage-title"><span class="num">3</span> Output neurons → choice</div>
-            <div id="mbon-bars"></div>
-            <div id="verdict" class="verdict"></div>
-          </div>
-          <div class="stage" id="raster-stage" hidden>
-            <div class="stage-title"><span class="num">4</span> 200 ms of spikes, live from the simulation
-              <button class="ghost small" id="btn-replay">▶ replay</button></div>
-            <canvas id="raster-canvas" class="raster"></canvas>
-            <div class="race-wrap"><svg id="race" class="race"></svg></div>
-          </div>
+        <div class="play-controls">
+          <button class="primary" id="btn-watch" disabled><span aria-hidden="true">▶</span> Loading the fly…</button>
+          <button class="secondary" id="btn-step" disabled>One hand <span aria-hidden="true">→</span></button>
+          <label class="speed-label" for="speed">Pace <select id="speed"><option value="1.6">Slow</option><option value="1" selected>Normal</option><option value="0.45">Fast</option></select></label>
         </div>
       </div>
-    </div>
-  </div>
-</section>
 
-<!-- ============================== STRATEGY ============================== -->
-<section id="tab-strategy" class="tab">
-  <div class="card">
-    <div class="card-head">
-      <h2>What the fly does in every situation</h2>
-      <div class="seg" id="strategy-src">
-        <button data-src="readout" class="on">readout</button>
-        <button data-src="spiking">spiking brain</button>
-      </div>
-    </div>
-    <p class="muted">Each cell is a decision state. Color is the probability that the fly hits, measured over held-out neural trials. Outlined cells are states where its majority choice differs from basic strategy (the mathematically optimal play). Hover for values; click to probe a state.</p>
-    <div class="tiles" id="strategy-tiles"></div>
-    <div class="heat-grid" id="heatmaps"></div>
-    <div class="legend" id="heat-legend"></div>
-  </div>
-</section>
-
-<!-- ============================== PROBE ============================== -->
-<section id="tab-probe" class="tab">
-  <div class="card">
-    <div class="card-head"><h2>Probe one situation many times</h2></div>
-    <p class="muted">The same cards never produce exactly the same spikes. Present one state repeatedly and see how reliable the fly's choice is.</p>
-    <div class="probe-form">
-      <label>Fly's total <select id="p-sum"></select></label>
-      <label>Dealer shows <select id="p-dealer"></select></label>
-      <label class="toggle"><input type="checkbox" id="p-soft"> soft (usable ace)</label>
-      <label>Trials <select id="p-trials"><option>8</option><option selected>16</option><option>32</option><option>64</option></select></label>
-      <button class="primary" id="btn-probe">Run</button>
-      <span class="muted small" id="probe-note"></span>
-    </div>
-    <div id="probe-out" hidden>
-      <div class="tiles" id="probe-tiles"></div>
-      <h3>Every trial: HIT pool vs STAND pool</h3>
-      <div class="chart-wrap"><svg id="probe-chart" class="chart"></svg></div>
-      <div class="two">
-        <div>
-          <h3>Average Kenyon-cell response to this state</h3>
-          <canvas id="probe-kc" class="kc-canvas"></canvas>
+      <aside class="fly-panel" aria-labelledby="fly-title">
+        <div class="fly-heading"><span class="eyebrow">MEET YOUR PLAYER</span><span class="player-status" id="player-status">Getting ready</span></div>
+        <div class="fly-portrait" id="fly-portrait">
+          <svg class="fly-illustration" viewBox="0 0 280 220" role="img" aria-labelledby="fly-art-title">
+            <title id="fly-art-title">An illustrated fruit fly with red eyes and translucent wings</title>
+            <defs><linearGradient id="wing" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#d1ddd2" stop-opacity=".65"/></linearGradient><linearGradient id="body" x2="1" y2="1"><stop stop-color="#a89066"/><stop offset="1" stop-color="#524b39"/></linearGradient></defs>
+            <ellipse cx="140" cy="191" rx="42" ry="7" fill="#233f32" opacity=".09"/>
+            <g class="fly-body">
+              <g fill="none" stroke="#554d3b" stroke-width="3" stroke-linecap="round"><path d="M125 103 99 90 83 65M121 119 91 125 77 147M126 136 108 156 104 177M155 103 181 90 197 65M159 119 189 125 203 147M154 136 172 156 176 177"/></g>
+              <ellipse cx="140" cy="139" rx="21" ry="35" fill="url(#body)" stroke="#554d3b" stroke-width="2"/>
+              <path d="M122 140Q140 148 158 140M124 151Q140 159 156 151M130 164Q140 168 150 164" fill="none" stroke="#4d4739" stroke-width="4"/>
+              <g class="wing wing-left"><path d="M133 113C115 61 51 66 48 98S101 151 133 123Z" fill="url(#wing)" stroke="#9eaea0" stroke-width="1.5"/><path d="M129 117 57 93M103 108 83 79M95 106 76 125" fill="none" stroke="#b0bcb0"/></g>
+              <g class="wing wing-right"><path d="M147 113C165 61 229 66 232 98S179 151 147 123Z" fill="url(#wing)" stroke="#9eaea0" stroke-width="1.5"/><path d="M151 117 223 93M177 108 197 79M185 106 204 125" fill="none" stroke="#b0bcb0"/></g>
+              <ellipse cx="140" cy="109" rx="18" ry="23" fill="#766a4c"/>
+              <path d="M128 90Q140 81 152 90L155 74Q140 59 125 74Z" fill="#7c7153"/>
+              <ellipse cx="125" cy="78" rx="12" ry="15" fill="#b95139" transform="rotate(-18 125 78)"/><ellipse cx="155" cy="78" rx="12" ry="15" fill="#b95139" transform="rotate(18 155 78)"/>
+              <ellipse cx="122" cy="73" rx="4" ry="6" fill="#e2926d"/><ellipse cx="152" cy="73" rx="4" ry="6" fill="#e2926d"/>
+              <path d="M135 64 130 51 124 49M145 64 150 51 156 49" fill="none" stroke="#554d3b" stroke-width="2" stroke-linecap="round"/>
+              <path d="M137 92 133 120M144 93 149 118" fill="none" stroke="#a69a75" stroke-width="2"/>
+            </g>
+          </svg>
+          <span class="portrait-note">Drosophila melanogaster</span>
         </div>
-        <div>
-          <h3>What each Kenyon cell learned to vote</h3>
-          <canvas id="probe-pref" class="kc-canvas"></canvas>
-        </div>
-      </div>
-      <div class="legend small" id="probe-legend"></div>
-    </div>
-  </div>
-</section>
+        <h2 id="fly-title">Small fly. Real brain wiring.</h2>
+        <p class="fly-description">A simulated fruit-fly brain makes every choice. You’re just here to watch.</p>
+        <div class="thought" role="status" aria-live="polite" aria-atomic="true"><span class="thought-label" id="thought-label">READY WHEN YOU ARE</span><p id="narration">A fresh deck. A tiny player.<br>Let’s see what this fly has learned.</p></div>
+        <ol class="decision-path" aria-label="Decision progress"><li id="stage-cards">See cards</li><li id="stage-think">Think</li><li id="stage-act">Choose</li></ol>
+        <p class="mode-caption" id="mode-caption">Playing with learned responses from recorded brain activity.</p>
+      </aside>
+    </section>
 
-<!-- ============================== TOURNAMENT ============================== -->
-<section id="tab-tournament" class="tab">
-  <div class="card">
-    <div class="card-head"><h2>Tournament</h2></div>
-    <p class="muted">The fly and four reference strategies each play the same number of hands, dealt from the same random seed. Uses the readout (each decision sees a fresh held-out neural trial).</p>
-    <div class="probe-form">
-      <label>Hands <select id="t-hands"><option>1000</option><option selected>10000</option><option>50000</option><option>200000</option></select></label>
-      <button class="primary" id="btn-tournament">Play</button>
-      <span class="muted small" id="t-note"></span>
-    </div>
-    <div id="t-out" hidden>
-      <div class="chart-wrap"><svg id="t-chart" class="chart tall"></svg></div>
-      <div class="legend" id="t-legend"></div>
-      <table class="data" id="t-table"></table>
-    </div>
-  </div>
-</section>
+    <div class="below-table"><div class="recent"><span class="eyebrow">RECENT HANDS</span><ol id="recent-hands" aria-label="Recent hand results"></ol><span class="recent-empty" id="recent-empty">Every hand is a new little adventure.</span></div><details class="settings"><summary>Playback settings</summary><div class="settings-content"><label for="brain-mode">Decision mode</label><select id="brain-mode"><option value="readout">Recorded brain responses</option><option value="spiking">Live spiking brain (GPU)</option></select><p id="mode-note">The trained fly chooses using recorded neural activity. Live mode runs a new whole-brain simulation for each choice.</p></div></details></div>
+    <div class="error" id="error" role="alert" hidden><p id="error-message"></p><button id="btn-retry">Try again</button></div>
 
-<!-- ============================== LEARNING ============================== -->
-<section id="tab-learning" class="tab">
-  <div class="card">
-    <div class="card-head"><h2>How the fly learned</h2></div>
-    <p class="muted">Expected winnings per hand of the fly's current strategy while it plays and dopamine updates its Kenyon cell → output neuron synapses. Five independently trained flies.</p>
-    <div class="chart-wrap"><svg id="l-chart" class="chart tall"></svg></div>
-    <div class="legend" id="l-legend"></div>
-  </div>
-  <div class="card">
-    <div class="card-head"><h2>Train a new fly</h2></div>
-    <p class="muted">Start from a naive mushroom body and watch it learn. Takes seconds. The new fly can then play in every tab (switch “Fly” in the header). Training never overwrites the saved results.</p>
-    <div class="probe-form">
-      <label>Hands <select id="n-hands"><option>10000</option><option>50000</option><option selected>300000</option><option>1000000</option></select></label>
-      <label>Learning rate η <select id="n-eta"><option>0.005</option><option>0.02</option><option selected>0.05</option><option>0.2</option></select></label>
-      <label>Exploration ε <select id="n-eps"><option>0.05</option><option selected>0.3</option><option>0.6</option></select></label>
-      <label>Seed <input id="n-seed" type="number" value="0" min="0" max="9999"></label>
-      <button class="primary" id="btn-train">Train</button>
-      <button id="btn-train-stop" disabled>Stop</button>
-      <span class="muted small" id="n-note"></span>
-    </div>
-    <div class="chart-wrap" id="n-wrap" hidden><svg id="n-chart" class="chart"></svg></div>
-    <div class="legend" id="n-legend"></div>
-  </div>
-</section>
-
-<!-- ============================== ABOUT ============================== -->
-<section id="tab-about" class="tab">
-  <div class="card prose">
-    <h2>How the fly plays Blackjack</h2>
-    <div class="pipeline" id="pipeline"></div>
-    <ol>
-      <li><b>Cards as odors.</b> The state (your total, dealer's upcard, soft/hard) becomes a combination of glomerulus channels. Projection neurons in active channels fire at 150 Hz for 200 ms. Nearby totals share channels, so they “smell” alike.</li>
-      <li><b>The real wiring.</b> The whole FlyWire connectome is simulated as spiking neurons. Projection neurons drive the Kenyon cells of the mushroom body; about 7% of them respond to any one state.</li>
-      <li><b>Dopamine learning.</b> Two output pools, HIT and STAND, read the Kenyon cells. After each choice a dopamine-like prediction error strengthens or weakens the synapses of the chosen pool from the active Kenyon cells.</li>
-      <li><b>The closed loop.</b> The learned weights were installed as real synapses onto two pairs of mushroom-body output neurons (MBON01 = HIT, MBON03 = STAND). In “Spiking brain” mode each decision runs the whole brain for 200 ms, and the fly hits if its HIT neurons fire more spikes.</li>
-    </ol>
-    <div class="figs">
-      <figure><img src="/figures/policy_heatmaps.png" alt="Fly strategy vs basic strategy heatmaps"><figcaption>Learned strategy vs. basic strategy</figcaption></figure>
-      <figure><img src="/figures/kenyon_code.png" alt="Kenyon cell similarity and sparsity"><figcaption>Kenyon-cell code</figcaption></figure>
-      <figure><img src="/figures/brain_plays_a_hand.png" alt="Spike raster of a hand"><figcaption>The spiking brain plays a hand</figcaption></figure>
-    </div>
-    <h3>Results</h3>
-    <table class="data" id="about-table"></table>
-  </div>
-</section>
-</main>
-
-<div id="tooltip" class="tooltip" hidden></div>
-<div id="toast" class="toast" hidden></div>
-<script src="app.js"></script>
+    <section class="explanation" id="how-it-works" aria-labelledby="how-title"><div><p class="eyebrow">BEHIND THE TINY DECISIONS</p><h2 id="how-title">Cards in. A choice out.</h2><p>No one is telling the fly which move to make.</p></div><div class="explanation-steps"><article><span>01</span><h3>Sense the cards</h3><p>The cards become a pattern of inputs, like an odor the fly can sense.</p></article><article><span>02</span><h3>Let the brain respond</h3><p>Signals pass through a model of a fruit fly’s actual brain wiring.</p></article><article><span>03</span><h3>Hit or stand</h3><p>Connections shaped by training turn that activity into a choice: take a card or stay.</p></article></div></section>
+  </main>
+  <footer><span>fly lab. <span class="footer-note">A fruit-fly brain, learning to play.</span></span><a href="lab.html">Curious about the science? Explore the lab ↗</a></footer>
+  <script src="app.js"></script>
 </body>
 </html>
